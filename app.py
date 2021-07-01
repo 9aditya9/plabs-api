@@ -7,12 +7,15 @@ import smtplib
 # import the email modules
 from email.message import EmailMessage
 # from typing_extensions import Required
+import phonenumbers
 
-from flask import Flask, jsonify, request, redirect
+from flask import Flask, jsonify, request, redirect, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # configuring app
@@ -47,10 +50,18 @@ user_schema = UserSchema(many=True)
 
 @app.route('/', methods=['POST'])
 def addUser():
+	print(request.json)
 	phoneNumber = request.json['phoneNumber']
 	dob = request.json['dob']
 	name = request.json['name']
 	email = request.json['email']
+
+	try:
+	 	p = phonenumbers.parse(phoneNumber)
+	 	if not phonenumbers.is_valid_number(p):
+	 		return 'value error', 400
+	except (phonenumbers.phonenumberutil.NumberParseException, ValueError):
+		return 'Invalid Phone Number', 400
 
 	new_user = Users(name, dob, email, phoneNumber)
 	db.session.add(new_user)
@@ -69,7 +80,7 @@ def addUser():
 	
 	s.send_message(msg)
 	s.quit()
-	return redirect('/users')
+	return 'hello', 200
 
 @app.route('/users', methods=['GET'])
 def getAllUsers():
